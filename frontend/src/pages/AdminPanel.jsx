@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { adminAPI } from '../services/api';
 import Layout from '../components/Layout';
 
 const AdminPanel = () => {
+  const navigate = useNavigate();
   const [statistics, setStatistics] = useState(null);
   const [stores, setStores] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -26,10 +29,14 @@ const AdminPanel = () => {
       setCustomers(customersRes.data.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
-      alert('Ошибка загрузки данных');
+      toast.error('Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEnterStore = (storeId) => {
+    navigate(`/store/dashboard?storeId=${storeId}`);
   };
 
   const handleDeleteStore = async (id) => {
@@ -37,18 +44,20 @@ const AdminPanel = () => {
 
     try {
       await adminAPI.deleteStore(id);
+      toast.success('Магазин успешно удален');
       fetchData();
     } catch (err) {
-      alert('Ошибка при удалении магазина');
+      toast.error('Ошибка при удалении магазина');
     }
   };
 
   const handleToggleUserStatus = async (id) => {
     try {
       await adminAPI.toggleUserStatus(id);
+      toast.success('Статус пользователя изменен');
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Ошибка при изменении статуса');
+      toast.error(err.response?.data?.message || 'Ошибка при изменении статуса');
     }
   };
 
@@ -63,16 +72,16 @@ const AdminPanel = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Админ-панель</h1>
+        <h1 className="text-3xl font-bold mb-6 dark:text-white">Админ-панель</h1>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-6 border-b">
+        <div className="flex space-x-4 mb-6 border-b dark:border-gray-700">
           <button
             onClick={() => setActiveTab('stats')}
             className={`px-4 py-2 ${
               activeTab === 'stats'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600'
+                ? 'border-b-2 border-primary dark:border-green-400 text-primary dark:text-green-400'
+                : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Статистика
@@ -81,8 +90,8 @@ const AdminPanel = () => {
             onClick={() => setActiveTab('stores')}
             className={`px-4 py-2 ${
               activeTab === 'stores'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600'
+                ? 'border-b-2 border-primary dark:border-green-400 text-primary dark:text-green-400'
+                : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Магазины ({stores.length})
@@ -91,8 +100,8 @@ const AdminPanel = () => {
             onClick={() => setActiveTab('customers')}
             className={`px-4 py-2 ${
               activeTab === 'customers'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600'
+                ? 'border-b-2 border-primary dark:border-green-400 text-primary dark:text-green-400'
+                : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Покупатели ({customers.length})
@@ -102,30 +111,30 @@ const AdminPanel = () => {
         {/* Statistics Tab */}
         {activeTab === 'stats' && statistics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-600 text-sm mb-2">Всего покупателей</div>
-              <div className="text-3xl font-bold text-primary">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="text-gray-600 dark:text-gray-400 text-sm mb-2">Всего покупателей</div>
+              <div className="text-3xl font-bold text-primary dark:text-green-400">
                 {statistics.totalCustomers}
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-600 text-sm mb-2">Всего магазинов</div>
-              <div className="text-3xl font-bold text-green-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="text-gray-600 dark:text-gray-400 text-sm mb-2">Всего магазинов</div>
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {statistics.totalStores}
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-600 text-sm mb-2">Активных товаров</div>
-              <div className="text-3xl font-bold text-blue-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="text-gray-600 dark:text-gray-400 text-sm mb-2">Активных товаров</div>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {statistics.totalProducts}
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-600 text-sm mb-2">Забрано товаров</div>
-              <div className="text-3xl font-bold text-orange-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="text-gray-600 dark:text-gray-400 text-sm mb-2">Забрано товаров</div>
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                 {statistics.pickedUpProducts}
               </div>
             </div>
@@ -136,56 +145,62 @@ const AdminPanel = () => {
         {activeTab === 'stores' && (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Название
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Адрес
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Email владельца
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Телефон
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Товаров
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Действия
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {stores.map((store) => (
                     <tr key={store.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{store.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600">{store.address}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{store.address}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{store.user?.email}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{store.user?.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
                           {store.user?.phoneNumber || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
                           {store.products?.length || 0}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                        <button
+                          onClick={() => handleEnterStore(store.id)}
+                          className="text-primary dark:text-green-400 hover:text-secondary dark:hover:text-green-300 text-sm font-medium"
+                        >
+                          Войти
+                        </button>
                         <button
                           onClick={() => handleDeleteStore(store.id)}
-                          className="text-red-600 hover:text-red-900 text-sm font-medium"
+                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 text-sm font-medium"
                         >
                           Удалить
                         </button>
@@ -196,7 +211,7 @@ const AdminPanel = () => {
               </table>
 
               {stores.length === 0 && (
-                <div className="text-center py-12 text-gray-600">
+                <div className="text-center py-12 text-gray-600 dark:text-gray-300">
                   Нет зарегистрированных магазинов
                 </div>
               )}
@@ -205,45 +220,53 @@ const AdminPanel = () => {
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               {stores.map((store) => (
-                <div key={store.id} className="bg-white rounded-lg shadow p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-lg text-gray-900">{store.name}</h3>
-                    <button
-                      onClick={() => handleDeleteStore(store.id)}
-                      className="text-red-600 hover:text-red-900 text-sm font-medium px-3 py-1 border border-red-600 rounded hover:bg-red-50"
-                    >
-                      Удалить
-                    </button>
+                <div key={store.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                  <div className="mb-3">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{store.name}</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEnterStore(store.id)}
+                        className="flex-1 text-primary hover:text-white border border-primary hover:bg-primary text-sm font-medium px-3 py-2 rounded transition-colors"
+                      >
+                        Войти в магазин
+                      </button>
+                      <button
+                        onClick={() => handleDeleteStore(store.id)}
+                        className="text-red-600 hover:text-red-900 text-sm font-medium px-3 py-2 border border-red-600 rounded hover:bg-red-50"
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-gray-500">Адрес:</span>
-                      <div className="text-gray-900">{store.address}</div>
+                      <span className="text-gray-500 dark:text-gray-400">Адрес:</span>
+                      <div className="text-gray-900 dark:text-gray-200">{store.address}</div>
                     </div>
 
                     <div>
-                      <span className="text-gray-500">Email владельца:</span>
-                      <div className="text-gray-900">{store.user?.email}</div>
+                      <span className="text-gray-500 dark:text-gray-400">Email владельца:</span>
+                      <div className="text-gray-900 dark:text-gray-200">{store.user?.email}</div>
                     </div>
 
                     {store.user?.phoneNumber && (
                       <div>
-                        <span className="text-gray-500">Телефон:</span>
-                        <div className="text-gray-900">{store.user.phoneNumber}</div>
+                        <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
+                        <div className="text-gray-900 dark:text-gray-200">{store.user.phoneNumber}</div>
                       </div>
                     )}
 
                     <div>
-                      <span className="text-gray-500">Товаров:</span>
-                      <span className="text-gray-900 ml-2">{store.products?.length || 0}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Товаров:</span>
+                      <span className="text-gray-900 dark:text-gray-200 ml-2">{store.products?.length || 0}</span>
                     </div>
                   </div>
                 </div>
               ))}
 
               {stores.length === 0 && (
-                <div className="text-center py-12 text-gray-600 bg-white rounded-lg shadow">
+                <div className="text-center py-12 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg shadow">
                   Нет зарегистрированных магазинов
                 </div>
               )}
@@ -255,35 +278,35 @@ const AdminPanel = () => {
         {activeTab === 'customers' && (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Телефон
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Статус
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Дата регистрации
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                       Действия
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {customers.map((customer) => (
                     <tr key={customer.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.email}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{customer.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
                           {customer.phoneNumber || '-'}
                         </div>
                       </td>
@@ -291,22 +314,22 @@ const AdminPanel = () => {
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             customer.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                           }`}
                         >
                           {customer.isActive ? 'Активен' : 'Неактивен'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
                           {new Date(customer.createdAt).toLocaleDateString('ru-RU')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleToggleUserStatus(customer.id)}
-                          className="text-primary hover:text-secondary text-sm font-medium"
+                          className="text-primary dark:text-green-400 hover:text-secondary dark:hover:text-green-300 text-sm font-medium"
                         >
                           {customer.isActive ? 'Деактивировать' : 'Активировать'}
                         </button>
@@ -317,7 +340,7 @@ const AdminPanel = () => {
               </table>
 
               {customers.length === 0 && (
-                <div className="text-center py-12 text-gray-600">
+                <div className="text-center py-12 text-gray-600 dark:text-gray-300">
                   Нет зарегистрированных покупателей
                 </div>
               )}
@@ -326,15 +349,15 @@ const AdminPanel = () => {
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               {customers.map((customer) => (
-                <div key={customer.id} className="bg-white rounded-lg shadow p-4">
+                <div key={customer.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900 mb-1">{customer.email}</div>
+                      <div className="font-medium text-gray-900 dark:text-white mb-1">{customer.email}</div>
                       <span
                         className={`inline-block px-2 py-1 text-xs rounded-full ${
                           customer.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                         }`}
                       >
                         {customer.isActive ? 'Активен' : 'Неактивен'}
@@ -345,14 +368,14 @@ const AdminPanel = () => {
                   <div className="space-y-2 text-sm mb-3">
                     {customer.phoneNumber && (
                       <div>
-                        <span className="text-gray-500">Телефон:</span>
-                        <div className="text-gray-900">{customer.phoneNumber}</div>
+                        <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
+                        <div className="text-gray-900 dark:text-gray-200">{customer.phoneNumber}</div>
                       </div>
                     )}
 
                     <div>
-                      <span className="text-gray-500">Дата регистрации:</span>
-                      <div className="text-gray-900">
+                      <span className="text-gray-500 dark:text-gray-400">Дата регистрации:</span>
+                      <div className="text-gray-900 dark:text-gray-200">
                         {new Date(customer.createdAt).toLocaleDateString('ru-RU')}
                       </div>
                     </div>
@@ -360,7 +383,7 @@ const AdminPanel = () => {
 
                   <button
                     onClick={() => handleToggleUserStatus(customer.id)}
-                    className="w-full py-2 px-4 border border-primary text-primary hover:bg-primary hover:text-white rounded text-sm font-medium transition-colors"
+                    className="w-full py-2 px-4 border border-primary dark:border-green-400 text-primary dark:text-green-400 hover:bg-primary dark:hover:bg-green-600 hover:text-white rounded text-sm font-medium transition-colors"
                   >
                     {customer.isActive ? 'Деактивировать' : 'Активировать'}
                   </button>
@@ -368,7 +391,7 @@ const AdminPanel = () => {
               ))}
 
               {customers.length === 0 && (
-                <div className="text-center py-12 text-gray-600 bg-white rounded-lg shadow">
+                <div className="text-center py-12 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg shadow">
                   Нет зарегистрированных покупателей
                 </div>
               )}

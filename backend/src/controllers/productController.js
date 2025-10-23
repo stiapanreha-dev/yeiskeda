@@ -1,7 +1,7 @@
 const { Product, Store } = require('../models');
 const { Op } = require('sequelize');
 
-// Create product
+// Create product (for store owner) or for specific store (for admin)
 exports.createProduct = async (req, res) => {
   try {
     const {
@@ -11,14 +11,22 @@ exports.createProduct = async (req, res) => {
       quantity,
       expiryDate
     } = req.body;
+    const { storeId } = req.query;
 
-    // Get store for current user
-    const store = await Store.findOne({ where: { userId: req.user.id } });
+    let store;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: use provided storeId
+      store = await Store.findByPk(storeId);
+    } else {
+      // Store owner mode: find by userId
+      store = await Store.findOne({ where: { userId: req.user.id } });
+    }
 
     if (!store) {
       return res.status(404).json({
         success: false,
-        message: 'У вас нет магазина. Создайте магазин сначала.'
+        message: req.user.role === 'admin' ? 'Магазин не найден' : 'У вас нет магазина. Создайте магазин сначала.'
       });
     }
 
@@ -62,7 +70,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Update product
+// Update product (for store owner) or for specific store (for admin)
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -74,9 +82,17 @@ exports.updateProduct = async (req, res) => {
       expiryDate,
       isAvailable
     } = req.body;
+    const { storeId } = req.query;
 
-    // Find product and verify ownership
-    const store = await Store.findOne({ where: { userId: req.user.id } });
+    let store;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: use provided storeId
+      store = await Store.findByPk(storeId);
+    } else {
+      // Store owner mode: find by userId
+      store = await Store.findOne({ where: { userId: req.user.id } });
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -136,13 +152,21 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// Mark product as picked up
+// Mark product as picked up (for store owner) or for specific store (for admin)
 exports.markAsPickedUp = async (req, res) => {
   try {
     const { id } = req.params;
+    const { storeId } = req.query;
 
-    // Find product and verify ownership
-    const store = await Store.findOne({ where: { userId: req.user.id } });
+    let store;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: use provided storeId
+      store = await Store.findByPk(storeId);
+    } else {
+      // Store owner mode: find by userId
+      store = await Store.findOne({ where: { userId: req.user.id } });
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -182,13 +206,21 @@ exports.markAsPickedUp = async (req, res) => {
   }
 };
 
-// Delete product
+// Delete product (for store owner) or for specific store (for admin)
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    const { storeId } = req.query;
 
-    // Find product and verify ownership
-    const store = await Store.findOne({ where: { userId: req.user.id } });
+    let store;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: use provided storeId
+      store = await Store.findByPk(storeId);
+    } else {
+      // Store owner mode: find by userId
+      store = await Store.findOne({ where: { userId: req.user.id } });
+    }
 
     if (!store) {
       return res.status(404).json({

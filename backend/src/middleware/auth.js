@@ -57,4 +57,25 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authenticateToken, authorize };
+// Allow store owner OR admin to access store management
+// Admin can manage any store, owner can manage only their own
+const authorizeStoreAccess = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Не авторизован'
+    });
+  }
+
+  // Admin or store role can pass
+  if (req.user.role === 'admin' || req.user.role === 'store') {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Нет доступа'
+    });
+  }
+};
+
+module.exports = { authenticateToken, authorize, authorizeStoreAccess };

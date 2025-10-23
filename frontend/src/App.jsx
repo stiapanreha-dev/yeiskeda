@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 
 // Pages
 import Home from './pages/Home';
@@ -26,6 +27,30 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Router>
         <Routes>
           {/* Public routes */}
@@ -35,11 +60,11 @@ function App() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/store/:slug" element={<StoreView />} />
 
-          {/* Store routes */}
+          {/* Store routes (accessible by store owner OR admin) */}
           <Route
             path="/store/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['store']}>
+              <ProtectedRoute allowedRoles={['store', 'admin']}>
                 <StoreDashboard />
               </ProtectedRoute>
             }
@@ -47,7 +72,7 @@ function App() {
           <Route
             path="/store/settings"
             element={
-              <ProtectedRoute allowedRoles={['store']}>
+              <ProtectedRoute allowedRoles={['store', 'admin']}>
                 <StoreSettings />
               </ProtectedRoute>
             }

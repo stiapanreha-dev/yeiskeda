@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const productController = require('../controllers/productController');
-const { authenticateToken, authorize } = require('../middleware/auth');
+const { authenticateToken, authorize, authorizeStoreAccess } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const processImage = require('../middleware/imageProcessor');
 
@@ -19,11 +19,11 @@ const validateProduct = [
 router.get('/', productController.getAllProducts);
 router.get('/:id', productController.getProductById);
 
-// Store owner routes
+// Store owner OR admin routes
 router.post(
   '/',
   authenticateToken,
-  authorize('store'),
+  authorizeStoreAccess,
   upload.single('photo'),
   processImage,
   validateProduct,
@@ -33,7 +33,7 @@ router.post(
 router.put(
   '/:id',
   authenticateToken,
-  authorize('store'),
+  authorizeStoreAccess,
   upload.single('photo'),
   processImage,
   productController.updateProduct
@@ -42,14 +42,14 @@ router.put(
 router.patch(
   '/:id/picked-up',
   authenticateToken,
-  authorize('store'),
+  authorizeStoreAccess,
   productController.markAsPickedUp
 );
 
 router.delete(
   '/:id',
   authenticateToken,
-  authorize('store'),
+  authorizeStoreAccess,
   productController.deleteProduct
 );
 

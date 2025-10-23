@@ -1,14 +1,25 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { storesAPI } from '../services/api';
 import Layout from '../components/Layout';
 
+const YANDEX_API_KEY = '5bb7a43b-1132-46a7-b74b-0cdd299885fd';
+
 const StoreSettings = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const storeId = searchParams.get('storeId'); // For admin access
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentPhoto, setCurrentPhoto] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [ymapsReady, setYmapsReady] = useState(false);
+  const ymapsRef = useRef(null);
+  const suggestTimeoutRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -29,7 +40,184 @@ const StoreSettings = () => {
 
   useEffect(() => {
     fetchStore();
+  }, [storeId]);
+
+  useEffect(() => {
+    loadYandexMaps();
   }, []);
+
+  // Cleanup при размонтировании
+  useEffect(() => {
+    return () => {
+      if (suggestTimeoutRef.current) {
+        clearTimeout(suggestTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Загрузка Yandex Maps API
+  const loadYandexMaps = () => {
+    console.log('loadYandexMaps called');
+
+    // Проверяем, загружен ли уже API
+    if (window.ymaps && window.ymaps.ready) {
+      console.log('Yandex Maps API already loaded');
+      if (ymapsRef.current) {
+        console.log('ymapsRef already set');
+        return; // Уже инициализирован
+      }
+
+      window.ymaps.ready(() => {
+        console.log('✅ Yandex Maps ready (existing)');
+        ymapsRef.current = window.ymaps;
+        setYmapsReady(true);
+        console.log('✅ ymapsRef.current set:', ymapsRef.current);
+      });
+      return;
+    }
+
+    // Проверяем, есть ли уже скрипт в DOM
+    const existingScript = document.querySelector('script[src*="api-maps.yandex.ru"]');
+    if (existingScript) {
+      console.log('Script already in DOM, waiting for load');
+      // Скрипт уже добавлен, ждем загрузки
+      if (window.ymaps) {
+        window.ymaps.ready(() => {
+          console.log('✅ Yandex Maps ready (from existing script)');
+          ymapsRef.current = window.ymaps;
+          setYmapsReady(true);
+          console.log('✅ ymapsRef.current set:', ymapsRef.current);
+        });
+      }
+      return;
+    }
+
+    console.log('Loading Yandex Maps API script');
+    const script = document.createElement('script');
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_API_KEY}&lang=ru_RU`;
+    script.async = true;
+    script.onload = () => {
+      console.log('Yandex Maps script loaded');
+      window.ymaps.ready(() => {
+        console.log('✅ Yandex Maps ready (new script)');
+        ymapsRef.current = window.ymaps;
+        setYmapsReady(true);
+        console.log('✅ ymapsRef.current set:', ymapsRef.current);
+      });
+    };
+    script.onerror = (error) => {
+      console.error('Error loading Yandex Maps script:', error);
+    };
+    document.head.appendChild(script);
+  };
+
+  // Получение подсказок адресов через геокодирование
+  const getSuggestions = async (query) => {
+    if (!query || query.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    if (!ymapsRef.current) {
+      console.log('⚠️ ymaps not ready yet');
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    if (typeof ymapsRef.current.geocode !== 'function') {
+      console.error('❌ ymaps.geocode is not a function:', ymapsRef.current);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    console.log('Getting suggestions for:', query);
+    setIsLoadingSuggestions(true);
+
+    try {
+      // Используем geocode для получения вариантов адресов
+      const result = await ymapsRef.current.geocode(query, {
+        results: 5
+      });
+
+      const geoObjects = result.geoObjects;
+      const suggestions = [];
+
+      for (let i = 0; i < geoObjects.getLength(); i++) {
+        const geoObject = geoObjects.get(i);
+        suggestions.push({
+          displayName: geoObject.getAddressLine(),
+          value: geoObject.getAddressLine(),
+          coords: geoObject.geometry.getCoordinates()
+        });
+      }
+
+      console.log('✅ Suggestions received:', suggestions);
+      setSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('❌ Error getting suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // Обработчик выбора адреса из списка
+  const handleSelectSuggestion = (suggestion) => {
+    console.log('✅ Selected suggestion:', suggestion);
+    const address = suggestion.displayName || suggestion.value;
+    const coords = suggestion.coords;
+
+    // Сразу устанавливаем адрес и координаты
+    setFormData(prev => ({
+      ...prev,
+      address: address,
+      latitude: coords[0].toFixed(6),
+      longitude: coords[1].toFixed(6)
+    }));
+
+    setShowSuggestions(false);
+    setSuggestions([]);
+
+    console.log('✅ Coordinates set:', { lat: coords[0].toFixed(6), lon: coords[1].toFixed(6) });
+  };
+
+  // Геокодирование адреса для получения координат
+  const geocodeAddress = async (address) => {
+    if (!ymapsRef.current || !address) {
+      console.log('Cannot geocode: ymaps or address is missing');
+      return;
+    }
+
+    console.log('Geocoding address:', address);
+
+    try {
+      const result = await ymapsRef.current.geocode(address, {
+        results: 1
+      });
+
+      const firstGeoObject = result.geoObjects.get(0);
+
+      if (firstGeoObject) {
+        const coords = firstGeoObject.geometry.getCoordinates();
+        console.log('✅ Coordinates found:', coords);
+
+        setFormData(prev => ({
+          ...prev,
+          latitude: coords[0].toFixed(6),
+          longitude: coords[1].toFixed(6)
+        }));
+      } else {
+        console.log('❌ No geoobject found for address:', address);
+      }
+    } catch (error) {
+      console.error('❌ Geocoding error:', error);
+    }
+  };
 
   // Нормализация workingHours - преобразует сложный формат в простой
   const normalizeWorkingHours = (hours) => {
@@ -70,7 +258,7 @@ const StoreSettings = () => {
 
   const fetchStore = async () => {
     try {
-      const response = await storesAPI.getMy();
+      const response = await storesAPI.getMy(storeId);
       const store = response.data.data;
 
       if (store) {
@@ -97,6 +285,21 @@ const StoreSettings = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  // Обработчик изменения адреса
+  const handleAddressChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, address: value });
+
+    // Debounce для запроса подсказок
+    if (suggestTimeoutRef.current) {
+      clearTimeout(suggestTimeoutRef.current);
+    }
+
+    suggestTimeoutRef.current = setTimeout(() => {
+      getSuggestions(value);
+    }, 300);
   };
 
   const handleFileChange = (e) => {
@@ -131,15 +334,18 @@ const StoreSettings = () => {
       }
 
       if (isEditMode) {
-        await storesAPI.update(data);
-        alert('Магазин успешно обновлен!');
+        await storesAPI.update(data, storeId);
+        toast.success('Магазин успешно обновлен!');
       } else {
-        await storesAPI.create(data);
-        alert('Магазин успешно создан!');
+        await storesAPI.create(data, storeId);
+        toast.success('Магазин успешно создан!');
       }
-      navigate('/store/dashboard');
+      // Navigate back with storeId if present (for admin)
+      setTimeout(() => {
+        navigate(storeId ? `/store/dashboard?storeId=${storeId}` : '/store/dashboard');
+      }, 500);
     } catch (err) {
-      alert(err.response?.data?.message || `Ошибка при ${isEditMode ? 'обновлении' : 'создании'} магазина`);
+      toast.error(err.response?.data?.message || `Ошибка при ${isEditMode ? 'обновлении' : 'создании'} магазина`);
     } finally {
       setLoading(false);
     }
@@ -156,15 +362,15 @@ const StoreSettings = () => {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Редактирование магазина' : 'Создание магазина'}</h1>
+        <h1 className="text-3xl font-bold mb-6 dark:text-white">{isEditMode ? 'Редактирование магазина' : 'Создание магазина'}</h1>
 
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6">
-          <p className="font-bold">Как найти координаты вашего магазина:</p>
+        <div className="bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-200 px-4 py-3 rounded mb-6">
+          <p className="font-bold">Как заполнить адрес:</p>
           <ol className="list-decimal ml-5 mt-2">
-            <li>Откройте <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="underline">Google Maps</a> или <a href="https://yandex.ru/maps" target="_blank" rel="noopener noreferrer" className="underline">Яндекс.Карты</a></li>
-            <li>Найдите адрес вашего магазина</li>
-            <li>Кликните правой кнопкой мыши на точку магазина или подержите на экране мобильного телефона несколько секунд на адресе вашего магазина</li>
-            <li>Скопируйте координаты (первое число - широта, второе - долгота)</li>
+            <li>Начните вводить адрес вашего магазина в поле "Адрес"</li>
+            <li>Выберите нужный вариант из выпадающего списка подсказок</li>
+            <li>Координаты определятся автоматически после выбора или нажатия вне поля</li>
+            <li>При необходимости можно скорректировать координаты вручную</li>
           </ol>
         </div>
 
@@ -195,17 +401,49 @@ const StoreSettings = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">Адрес *</label>
+            <div className="relative">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">Адрес * (начните вводить для подсказок)</label>
               <input
                 type="text"
+                id="address-input"
                 name="address"
                 value={formData.address}
-                onChange={handleChange}
+                onChange={handleAddressChange}
+                onFocus={() => formData.address.length >= 3 && getSuggestions(formData.address)}
                 className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
                 required
-                placeholder="г. Астана, ул. Кабанбай Батыра, 15"
+                placeholder="Например: г. Ейск, ул. Свердлова, 87"
+                autoComplete="off"
               />
+
+              {/* Выпадающий список подсказок */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-gray-900 dark:text-white border-b dark:border-gray-600 last:border-b-0"
+                    >
+                      {suggestion.displayName || suggestion.value}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isLoadingSuggestions && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg px-4 py-2">
+                  <span className="text-gray-600 dark:text-gray-300">Загрузка подсказок...</span>
+                </div>
+              )}
+
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {ymapsReady ? (
+                  <>💡 Начните вводить адрес (мин. 3 символа), выберите вариант из списка - координаты определятся автоматически</>
+                ) : (
+                  <>⏳ Загрузка карт Яндекс... Подождите перед вводом адреса</>
+                )}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

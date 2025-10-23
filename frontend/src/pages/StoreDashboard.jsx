@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { storesAPI, productsAPI } from '../services/api';
 import Layout from '../components/Layout';
+import { useAuthStore } from '../store/authStore';
 
 const StoreDashboard = () => {
+  const [searchParams] = useSearchParams();
+  const storeId = searchParams.get('storeId'); // For admin access
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -19,11 +26,11 @@ const StoreDashboard = () => {
 
   useEffect(() => {
     fetchStore();
-  }, []);
+  }, [storeId]);
 
   const fetchStore = async () => {
     try {
-      const response = await storesAPI.getMy();
+      const response = await storesAPI.getMy(storeId); // Pass storeId for admin
       setStore(response.data.data);
     } catch (err) {
       console.error('Error fetching store:', err);
@@ -45,19 +52,19 @@ const StoreDashboard = () => {
     try {
       if (editingProduct) {
         // Обновление существующего товара
-        await productsAPI.update(editingProduct.id, formData);
-        alert('Товар успешно обновлен!');
+        await productsAPI.update(editingProduct.id, formData, storeId);
+        toast.success('Товар успешно обновлен!');
         setEditingProduct(null);
       } else {
         // Создание нового товара
-        await productsAPI.create(formData);
-        alert('Товар успешно добавлен!');
+        await productsAPI.create(formData, storeId);
+        toast.success('Товар успешно добавлен!');
       }
       setShowProductForm(false);
       setProductForm({ name: '', originalPrice: '', discountPrice: '', quantity: 1, expiryDate: '', photo: null });
       fetchStore();
     } catch (err) {
-      alert(err.response?.data?.message || `Ошибка при ${editingProduct ? 'обновлении' : 'добавлении'} товара`);
+      toast.error(err.response?.data?.message || `Ошибка при ${editingProduct ? 'обновлении' : 'добавлении'} товара`);
     }
   };
 
@@ -83,10 +90,11 @@ const StoreDashboard = () => {
   const handleMarkAsPickedUp = async (productId) => {
     if (confirm('Пометить товар как забранный?')) {
       try {
-        await productsAPI.markAsPickedUp(productId);
+        await productsAPI.markAsPickedUp(productId, storeId);
+        toast.success('Товар помечен как забранный');
         fetchStore();
       } catch (err) {
-        alert('Ошибка при обновлении статуса');
+        toast.error('Ошибка при обновлении статуса');
       }
     }
   };
@@ -94,10 +102,11 @@ const StoreDashboard = () => {
   const handleDeleteProduct = async (productId) => {
     if (confirm('Удалить товар?')) {
       try {
-        await productsAPI.delete(productId);
+        await productsAPI.delete(productId, storeId);
+        toast.success('Товар удален');
         fetchStore();
       } catch (err) {
-        alert('Ошибка при удалении');
+        toast.error('Ошибка при удалении');
       }
     }
   };
@@ -142,7 +151,7 @@ const StoreDashboard = () => {
               <p className="text-gray-600 dark:text-gray-300">{store.address}</p>
             </div>
             <Link
-              to="/store/settings"
+              to={storeId ? `/store/settings?storeId=${storeId}` : '/store/settings'}
               className="flex-shrink-0 p-3 rounded-lg bg-primary hover:bg-secondary text-white transition-colors"
               title="Редактировать магазин"
             >

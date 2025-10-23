@@ -13,6 +13,9 @@ const StoreView = () => {
   const [showWorkingHours, setShowWorkingHours] = useState(false);
   const workingHoursRef = useRef(null);
 
+  // Правильный порядок дней недели (понедельник - воскресенье)
+  const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
   // Словарь для перевода дней недели
   const dayTranslations = {
     monday: 'Понедельник',
@@ -169,12 +172,14 @@ const StoreView = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300">{store.workingHours}</p>
                 ) : (
                   <div className="space-y-1">
-                    {Object.entries(store.workingHours).map(([day, hours]) => (
-                      <div key={day} className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">{dayTranslations[day] || day}:</span>
-                        <span className="text-gray-800 dark:text-gray-200">{formatWorkingHours(hours)}</span>
-                      </div>
-                    ))}
+                    {daysOrder
+                      .filter(day => store.workingHours[day])
+                      .map(day => (
+                        <div key={day} className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">{dayTranslations[day]}:</span>
+                          <span className="text-gray-800 dark:text-gray-200">{formatWorkingHours(store.workingHours[day])}</span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </div>

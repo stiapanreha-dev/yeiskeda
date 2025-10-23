@@ -48,28 +48,40 @@ export const authAPI = {
 export const storesAPI = {
   getAll: (params) => api.get('/stores', { params }),
   getById: (id) => api.get(`/stores/${id}`),
-  getMy: () => api.get('/stores/my/store'),
-  create: (data) => api.post('/stores', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+  getMy: (storeId) => api.get('/stores/my/store', {
+    params: storeId ? { storeId } : {}
   }),
-  update: (data) => api.put('/stores', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+  create: (data, storeId) => api.post('/stores', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: storeId ? { storeId } : {}
   }),
-  delete: () => api.delete('/stores')
+  update: (data, storeId) => api.put('/stores', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: storeId ? { storeId } : {}
+  }),
+  delete: (storeId) => api.delete('/stores', {
+    params: storeId ? { storeId } : {}
+  })
 };
 
 // Products API
 export const productsAPI = {
   getAll: () => api.get('/products'),
   getById: (id) => api.get(`/products/${id}`),
-  create: (data) => api.post('/products', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+  create: (data, storeId) => api.post('/products', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: storeId ? { storeId } : {}
   }),
-  update: (id, data) => api.put(`/products/${id}`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+  update: (id, data, storeId) => api.put(`/products/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: storeId ? { storeId } : {}
   }),
-  markAsPickedUp: (id) => api.patch(`/products/${id}/picked-up`),
-  delete: (id) => api.delete(`/products/${id}`)
+  markAsPickedUp: (id, storeId) => api.patch(`/products/${id}/picked-up`, {}, {
+    params: storeId ? { storeId } : {}
+  }),
+  delete: (id, storeId) => api.delete(`/products/${id}`, {
+    params: storeId ? { storeId } : {}
+  })
 };
 
 // Admin API

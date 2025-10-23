@@ -15,10 +15,22 @@ exports.createOrUpdateStore = async (req, res) => {
       workingHours
     } = req.body;
 
-    const userId = req.user.id;
+    // Admin can manage any store by providing storeId in query
+    // Store owner manages their own store
+    const { storeId } = req.query;
+    let userId = req.user.id;
+    let store;
 
-    // Check if store already exists for this user
-    let store = await Store.findOne({ where: { userId } });
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: find store by storeId
+      store = await Store.findByPk(storeId);
+      if (store) {
+        userId = store.userId; // Keep original owner
+      }
+    } else {
+      // Store owner mode: find by userId
+      store = await Store.findOne({ where: { userId } });
+    }
 
     const storeData = {
       name,
@@ -155,11 +167,22 @@ exports.getStoreById = async (req, res) => {
   }
 };
 
-// Get my store (for store owner)
+// Get my store (for store owner) or specific store (for admin)
 exports.getMyStore = async (req, res) => {
   try {
+    const { storeId } = req.query;
+    let whereClause;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: find store by storeId
+      whereClause = { id: storeId };
+    } else {
+      // Store owner mode: find by userId
+      whereClause = { userId: req.user.id };
+    }
+
     const store = await Store.findOne({
-      where: { userId: req.user.id },
+      where: whereClause,
       include: [
         {
           model: Product,
@@ -171,7 +194,7 @@ exports.getMyStore = async (req, res) => {
     if (!store) {
       return res.status(404).json({
         success: false,
-        message: 'У вас нет магазина'
+        message: req.user.role === 'admin' ? 'Магазин не найден' : 'У вас нет магазина'
       });
     }
 
@@ -189,10 +212,21 @@ exports.getMyStore = async (req, res) => {
   }
 };
 
-// Delete store (for store owner)
+// Delete store (for store owner) or specific store (for admin)
 exports.deleteStore = async (req, res) => {
   try {
-    const store = await Store.findOne({ where: { userId: req.user.id } });
+    const { storeId } = req.query;
+    let whereClause;
+
+    if (req.user.role === 'admin' && storeId) {
+      // Admin mode: delete store by storeId
+      whereClause = { id: storeId };
+    } else {
+      // Store owner mode: delete by userId
+      whereClause = { userId: req.user.id };
+    }
+
+    const store = await Store.findOne({ where: whereClause });
 
     if (!store) {
       return res.status(404).json({

@@ -97,8 +97,12 @@ const Header = () => {
     <header className="bg-white dark:bg-gray-800 shadow-md transition-colors duration-200">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold text-primary dark:text-green-400 hidden md:block">
-            Спаси Еду
+          <Link to="/" className="flex items-center">
+            <img
+              src="/logo.png"
+              alt="Подслушано в Ейске"
+              className="h-12 w-12 object-contain"
+            />
           </Link>
 
           <nav className="flex items-center space-x-2 md:space-x-6 w-full md:w-auto justify-end">
