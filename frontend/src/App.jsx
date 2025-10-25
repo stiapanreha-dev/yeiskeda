@@ -14,6 +14,7 @@ import AdminPanel from './pages/AdminPanel';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
+import IOSInstallPrompt from './components/IOSInstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function App() {
           },
         }}
       />
+      <IOSInstallPrompt />
       <Router>
         <Routes>
           {/* Public routes */}
