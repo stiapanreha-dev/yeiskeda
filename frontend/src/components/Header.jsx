@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState, useEffect, useRef } from 'react';
 import { storesAPI } from '../services/api';
+import InstallPWA from './InstallPWA';
 
 const Header = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -210,6 +211,9 @@ const Header = () => {
                 )}
               </div>
             )}
+
+            {/* Кнопка установки PWA */}
+            <InstallPWA />
 
             {/* Переключатель темы */}
             <button
