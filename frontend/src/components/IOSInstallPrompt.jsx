@@ -61,24 +61,47 @@ const IOSInstallPrompt = () => {
         </div>
 
         {/* Инструкция */}
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 mb-3">
-          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2">1</span>
-              <p>Нажмите кнопку <strong>"Поделиться"</strong>
-                <svg className="inline w-5 h-5 mx-1 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                </svg>
-                внизу экрана
-              </p>
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl p-4 mb-3">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+            Для установки приложения:
+          </p>
+
+          <div className="space-y-3 text-sm">
+            {/* Шаг 1 */}
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+              <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-base font-bold mr-3">1</span>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 dark:text-white">Нажмите</p>
+                <div className="flex items-center mt-1">
+                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.11 0-2-.9-2-2V10c0-1.11.89-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .89 2 2z"/>
+                  </svg>
+                  <span className="text-gray-700 dark:text-gray-300">внизу Safari</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2">2</span>
-              <p>Выберите <strong>"На экран «Домой»"</strong></p>
+
+            {/* Шаг 2 */}
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+              <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-base font-bold mr-3">2</span>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 dark:text-white">Выберите</p>
+                <div className="flex items-center mt-1">
+                  <svg className="w-6 h-6 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0 0l-4-4m4 4l4-4m-8-8h8"/>
+                  </svg>
+                  <span className="text-gray-700 dark:text-gray-300">"На экран «Домой»"</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2">3</span>
-              <p>Нажмите <strong>"Добавить"</strong></p>
+
+            {/* Шаг 3 */}
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+              <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-base font-bold mr-3">3</span>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 dark:text-white">Нажмите "Добавить"</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Готово! Иконка появится на экране</p>
+              </div>
             </div>
           </div>
         </div>
