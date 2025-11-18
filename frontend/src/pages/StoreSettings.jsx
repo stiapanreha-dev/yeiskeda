@@ -137,22 +137,29 @@ const StoreSettings = () => {
     setIsLoadingSuggestions(true);
 
     try {
-      // Используем geocode для получения вариантов адресов
-      const result = await ymapsRef.current.geocode(query, {
-        results: 5
-      });
+      // Используем HTTP Geocoder API напрямую (более надёжно)
+      const apiKey = YANDEX_API_KEY;
+      const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&results=5`;
 
-      const geoObjects = result.geoObjects;
-      const suggestions = [];
+      const response = await fetch(url);
 
-      for (let i = 0; i < geoObjects.getLength(); i++) {
-        const geoObject = geoObjects.get(i);
-        suggestions.push({
-          displayName: geoObject.getAddressLine(),
-          value: geoObject.getAddressLine(),
-          coords: geoObject.geometry.getCoordinates()
-        });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      const geoObjects = data.response.GeoObjectCollection.featureMember;
+
+      const suggestions = geoObjects.map(item => {
+        const geoObject = item.GeoObject;
+        const coords = geoObject.Point.pos.split(' ').reverse().map(Number); // lon,lat -> lat,lon
+
+        return {
+          displayName: geoObject.metaDataProperty.GeocoderMetaData.text,
+          value: geoObject.metaDataProperty.GeocoderMetaData.text,
+          coords: coords
+        };
+      });
 
       console.log('✅ Suggestions received:', suggestions);
       setSuggestions(suggestions);
