@@ -5,6 +5,7 @@ import { storesAPI } from '../services/api';
 import Layout from '../components/Layout';
 
 const YANDEX_API_KEY = import.meta.env.VITE_YANDEX_API_KEY;
+const YANDEX_SUGGEST_KEY = import.meta.env.VITE_YANDEX_GEOSUGGEST_KEY;
 
 const StoreSettings = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const StoreSettings = () => {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [ymapsReady, setYmapsReady] = useState(false);
   const ymapsRef = useRef(null);
+  const suggestViewRef = useRef(null);
   const suggestTimeoutRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -94,7 +96,7 @@ const StoreSettings = () => {
 
     console.log('Loading Yandex Maps API script');
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_API_KEY}&lang=ru_RU`;
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_API_KEY}&suggest_apikey=${YANDEX_SUGGEST_KEY}&lang=ru_RU`;
     script.async = true;
     script.onload = () => {
       console.log('Yandex Maps script loaded');
@@ -137,30 +139,41 @@ const StoreSettings = () => {
     setIsLoadingSuggestions(true);
 
     try {
-      // Используем JavaScript Maps API geocode (работает с нашими ключами)
-      const result = await ymapsRef.current.geocode(query, {
+      // Используем ymaps.suggest() - официальный метод для автодополнения
+      const items = await ymapsRef.current.suggest(query, {
         results: 5
       });
 
-      const geoObjects = result.geoObjects;
-      const count = geoObjects.getLength();
+      console.log('✅ Suggest items received:', items);
 
-      const suggestions = [];
-      for (let i = 0; i < count; i++) {
-        const geoObject = geoObjects.get(i);
-        const addressLine = geoObject.getAddressLine();
-        const coords = geoObject.geometry.getCoordinates();
+      // Преобразуем результаты suggest в формат с координатами
+      const suggestions = await Promise.all(
+        items.map(async (item) => {
+          try {
+            // Получаем координаты через geocode для каждого адреса
+            const geocodeResult = await ymapsRef.current.geocode(item.value, { results: 1 });
+            const firstGeoObject = geocodeResult.geoObjects.get(0);
+            const coords = firstGeoObject ? firstGeoObject.geometry.getCoordinates() : null;
 
-        suggestions.push({
-          displayName: addressLine,
-          value: addressLine,
-          coords: coords
-        });
-      }
+            return {
+              displayName: item.displayName,
+              value: item.value,
+              coords: coords
+            };
+          } catch (err) {
+            console.error('Error geocoding suggestion:', err);
+            return {
+              displayName: item.displayName,
+              value: item.value,
+              coords: null
+            };
+          }
+        })
+      );
 
-      console.log('✅ Suggestions received:', suggestions);
-      setSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
+      console.log('✅ Suggestions with coords:', suggestions);
+      setSuggestions(suggestions.filter(s => s.coords)); // Только с координатами
+      setShowSuggestions(suggestions.filter(s => s.coords).length > 0);
     } catch (error) {
       console.error('❌ Error getting suggestions:', error);
       setSuggestions([]);
