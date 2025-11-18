@@ -100,7 +100,7 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <img
-              src="/almaz.png"
+              src="/icon-512x512.png"
               alt="Спаси Еду"
               className="h-12 w-12 object-contain"
             />
