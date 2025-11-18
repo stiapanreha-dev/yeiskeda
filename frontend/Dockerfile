@@ -12,6 +12,14 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Accept build arguments for Vite environment variables
+ARG VITE_YANDEX_API_KEY
+ARG VITE_YANDEX_GEOSUGGEST_KEY
+
+# Make them available as environment variables during build
+ENV VITE_YANDEX_API_KEY=$VITE_YANDEX_API_KEY
+ENV VITE_YANDEX_GEOSUGGEST_KEY=$VITE_YANDEX_GEOSUGGEST_KEY
+
 # Build application
 RUN npm run build
 
