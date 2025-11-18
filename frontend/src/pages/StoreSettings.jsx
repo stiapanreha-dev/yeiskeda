@@ -146,34 +146,17 @@ const StoreSettings = () => {
 
       console.log('✅ Suggest items received:', items);
 
-      // Преобразуем результаты suggest в формат с координатами
-      const suggestions = await Promise.all(
-        items.map(async (item) => {
-          try {
-            // Получаем координаты через geocode для каждого адреса
-            const geocodeResult = await ymapsRef.current.geocode(item.value, { results: 1 });
-            const firstGeoObject = geocodeResult.geoObjects.get(0);
-            const coords = firstGeoObject ? firstGeoObject.geometry.getCoordinates() : null;
+      // Преобразуем результаты suggest в простой формат
+      // Координаты получим позже, когда пользователь выберет адрес
+      const suggestions = items.map(item => ({
+        displayName: item.displayName,
+        value: item.value,
+        coords: null // Получим при выборе
+      }));
 
-            return {
-              displayName: item.displayName,
-              value: item.value,
-              coords: coords
-            };
-          } catch (err) {
-            console.error('Error geocoding suggestion:', err);
-            return {
-              displayName: item.displayName,
-              value: item.value,
-              coords: null
-            };
-          }
-        })
-      );
-
-      console.log('✅ Suggestions with coords:', suggestions);
-      setSuggestions(suggestions.filter(s => s.coords)); // Только с координатами
-      setShowSuggestions(suggestions.filter(s => s.coords).length > 0);
+      console.log('✅ Suggestions:', suggestions);
+      setSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
     } catch (error) {
       console.error('❌ Error getting suggestions:', error);
       setSuggestions([]);
@@ -184,52 +167,96 @@ const StoreSettings = () => {
   };
 
   // Обработчик выбора адреса из списка
-  const handleSelectSuggestion = (suggestion) => {
+  const handleSelectSuggestion = async (suggestion) => {
     console.log('✅ Selected suggestion:', suggestion);
     const address = suggestion.displayName || suggestion.value;
-    const coords = suggestion.coords;
 
-    // Сразу устанавливаем адрес и координаты
+    // Устанавливаем адрес
     setFormData(prev => ({
       ...prev,
-      address: address,
-      latitude: coords[0].toFixed(6),
-      longitude: coords[1].toFixed(6)
+      address: address
     }));
 
     setShowSuggestions(false);
     setSuggestions([]);
 
-    console.log('✅ Coordinates set:', { lat: coords[0].toFixed(6), lon: coords[1].toFixed(6) });
+    // Получаем координаты через Nominatim (бесплатный, без ключа)
+    try {
+      console.log('Getting coordinates for:', address);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'FoodDiscountPlatform/1.0'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat.toFixed(6),
+          longitude: lon.toFixed(6)
+        }));
+
+        console.log('✅ Coordinates set:', { lat: lat.toFixed(6), lon: lon.toFixed(6) });
+      } else {
+        console.log('⚠️ No coordinates found for address');
+        toast.error('Не удалось определить координаты адреса');
+      }
+    } catch (error) {
+      console.error('❌ Error getting coordinates:', error);
+      toast.error('Ошибка при получении координат');
+    }
   };
 
-  // Геокодирование адреса для получения координат
+  // Геокодирование адреса для получения координат (при ручном вводе)
   const geocodeAddress = async (address) => {
-    if (!ymapsRef.current || !address) {
-      console.log('Cannot geocode: ymaps or address is missing');
+    if (!address) {
+      console.log('Cannot geocode: address is missing');
       return;
     }
 
     console.log('Geocoding address:', address);
 
     try {
-      const result = await ymapsRef.current.geocode(address, {
-        results: 1
-      });
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'FoodDiscountPlatform/1.0'
+          }
+        }
+      );
 
-      const firstGeoObject = result.geoObjects.get(0);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (firstGeoObject) {
-        const coords = firstGeoObject.geometry.getCoordinates();
-        console.log('✅ Coordinates found:', coords);
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
 
         setFormData(prev => ({
           ...prev,
-          latitude: coords[0].toFixed(6),
-          longitude: coords[1].toFixed(6)
+          latitude: lat.toFixed(6),
+          longitude: lon.toFixed(6)
         }));
+
+        console.log('✅ Coordinates found:', { lat: lat.toFixed(6), lon: lon.toFixed(6) });
       } else {
-        console.log('❌ No geoobject found for address:', address);
+        console.log('❌ No coordinates found for address:', address);
       }
     } catch (error) {
       console.error('❌ Geocoding error:', error);
