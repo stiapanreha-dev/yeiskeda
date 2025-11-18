@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { storesAPI } from '../services/api';
 import Layout from '../components/Layout';
 
-const YANDEX_API_KEY = '5bb7a43b-1132-46a7-b74b-0cdd299885fd';
+const YANDEX_API_KEY = import.meta.env.VITE_YANDEX_API_KEY;
 
 const MapPage = () => {
   const [stores, setStores] = useState([]);
