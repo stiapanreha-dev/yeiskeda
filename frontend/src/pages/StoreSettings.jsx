@@ -154,9 +154,14 @@ const StoreSettings = () => {
         coords: null // Получим при выборе
       }));
 
-      console.log('✅ Suggestions:', suggestions);
-      setSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
+      // Убираем дубликаты по value
+      const uniqueSuggestions = suggestions.filter((item, index, self) =>
+        index === self.findIndex((t) => t.value === item.value)
+      );
+
+      console.log('✅ Unique suggestions:', uniqueSuggestions);
+      setSuggestions(uniqueSuggestions);
+      setShowSuggestions(uniqueSuggestions.length > 0);
     } catch (error) {
       console.error('❌ Error getting suggestions:', error);
       setSuggestions([]);
