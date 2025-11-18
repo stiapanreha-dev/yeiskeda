@@ -26,6 +26,10 @@ const processImage = async (req, res, next) => {
     const newFileName = `${parsedPath.name}.${outputFormat}`;
     const newPath = path.join(parsedPath.dir, newFileName);
 
+    // Если новый путь совпадает с оригинальным, используем временный файл
+    const tempPath = path.join(parsedPath.dir, `temp-${parsedPath.name}.${outputFormat}`);
+    const outputPath = originalPath === newPath ? tempPath : newPath;
+
     // Обработка изображения с помощью sharp
     await sharp(originalPath)
       .resize(maxWidth, maxHeight, {
@@ -33,10 +37,14 @@ const processImage = async (req, res, next) => {
         withoutEnlargement: true // Не увеличивает маленькие изображения
       })
       .jpeg({ quality }) // Конвертируем в JPEG с указанным качеством
-      .toFile(newPath);
+      .toFile(outputPath);
 
-    // Удаляем оригинальный файл, если он отличается от обработанного
-    if (originalPath !== newPath) {
+    // Если использовали временный файл, заменяем им оригинал
+    if (outputPath === tempPath) {
+      fs.unlinkSync(originalPath);
+      fs.renameSync(tempPath, newPath);
+    } else if (originalPath !== newPath) {
+      // Удаляем оригинальный файл, если он отличается от обработанного
       fs.unlinkSync(originalPath);
     }
 
