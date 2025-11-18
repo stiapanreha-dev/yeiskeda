@@ -5,6 +5,7 @@ import { storesAPI } from '../services/api';
 import Layout from '../components/Layout';
 
 const YANDEX_API_KEY = import.meta.env.VITE_YANDEX_API_KEY;
+const YANDEX_GEOSUGGEST_KEY = import.meta.env.VITE_YANDEX_GEOSUGGEST_KEY || YANDEX_API_KEY;
 
 const StoreSettings = () => {
   const navigate = useNavigate();
@@ -94,7 +95,7 @@ const StoreSettings = () => {
 
     console.log('Loading Yandex Maps API script');
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_API_KEY}&lang=ru_RU`;
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_GEOSUGGEST_KEY}&lang=ru_RU`;
     script.async = true;
     script.onload = () => {
       console.log('Yandex Maps script loaded');
