@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yandex API Key Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .log {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-success {
+            color: #28a745;
+        }
+        .log-error {
+            color: #dc3545;
+        }
+        .log-info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Yandex API Key Tester</h1>
+
+        <div class="input-group">
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" placeholder="Введите Yandex API ключ" value="5bb7a43b-1132-46a7-b74b-0cdd299885fd">
+        </div>
+
+        <div class="input-group">
+            <label for="testAddress">Тестовый адрес:</label>
+            <input type="text" id="testAddress" placeholder="Введите адрес для теста" value="г. Ейск">
+        </div>
+
+        <button onclick="testAPI()">🧪 Тест API</button>
+        <button onclick="testGeocoding()">📍 Тест Геокодирования</button>
+        <button onclick="testMapLoad()">🗺️ Тест Загрузки Карты</button>
+        <button onclick="clearLog()">🗑️ Очистить лог</button>
+
+        <div id="result" class="result"></div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        let ymaps = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function testMapLoad() {
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!apiKey) {
+                showResult('❌ Введите API ключ', 'error');
+                log('Ошибка: API ключ не указан', 'error');
+                return;
+            }
+
+            log('Начинаем тест загрузки Yandex Maps API...', 'info');
+            log(`API Key: ${apiKey.substring(0, 10)}...`, 'info');
+
+            // Удаляем старый скрипт если есть
+            const oldScript = document.querySelector('script[src*="api-maps.yandex.ru"]');
+            if (oldScript) {
+                log('Удаляем старый скрипт Yandex Maps', 'info');
+                oldScript.remove();
+            }
+
+            try {
+                const script = document.createElement('script');
+                script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
+
+                script.onload = () => {
+                    log('✅ Скрипт Yandex Maps загружен успешно', 'success');
+
+                    window.ymaps.ready(() => {
+                        ymaps = window.ymaps;
+                        log('✅ Yandex Maps API готов к использованию', 'success');
+                        showResult('✅ Yandex Maps API загружен успешно!', 'success');
+                    });
+                };
+
+                script.onerror = (error) => {
+                    log('❌ Ошибка загрузки скрипта Yandex Maps', 'error');
+                    log(`Детали: ${error}`, 'error');
+                    showResult('❌ Не удалось загрузить Yandex Maps API', 'error');
+                };
+
+                document.head.appendChild(script);
+                log('Скрипт добавлен в документ, ожидание загрузки...', 'info');
+
+            } catch (error) {
+                log(`❌ Ошибка: ${error.message}`, 'error');
+                showResult(`❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGeocoding() {
+            const address = document.getElementById('testAddress').value;
+
+            if (!ymaps) {
+                showResult('⚠️ Сначала загрузите API (нажмите "Тест Загрузки Карты")', 'info');
+                log('Предупреждение: Yandex Maps API не загружен', 'error');
+                return;
+            }
+
+            if (!address) {
+                showResult('❌ Введите адрес для теста', 'error');
+                log('Ошибка: адрес не указан', 'error');
+                return;
+            }
+
+            log(`Тестируем геокодирование адреса: "${address}"`, 'info');
+
+            try {
+                const result = await ymaps.geocode(address, { results: 5 });
+                const geoObjects = result.geoObjects;
+                const count = geoObjects.getLength();
+
+                log(`✅ Геокодирование выполнено успешно`, 'success');
+                log(`Найдено результатов: ${count}`, 'success');
+
+                if (count === 0) {
+                    showResult('⚠️ Адрес не найден', 'info');
+                    return;
+                }
+
+                for (let i = 0; i < count; i++) {
+                    const geoObject = geoObjects.get(i);
+                    const addressLine = geoObject.getAddressLine();
+                    const coords = geoObject.geometry.getCoordinates();
+
+                    log(`${i + 1}. ${addressLine}`, 'success');
+                    log(`   Координаты: [${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}]`, 'info');
+                }
+
+                showResult(`✅ Найдено ${count} результатов`, 'success');
+
+            } catch (error) {
+                log(`❌ Ошибка геокодирования: ${error.message}`, 'error');
+                log(`Тип ошибки: ${error.name}`, 'error');
+                if (error.message === 'scriptError') {
+                    log('⚠️ scriptError означает проблему с API ключом или его правами', 'error');
+                }
+                showResult(`❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPI() {
+            await testMapLoad();
+
+            // Ждём загрузки API перед тестом геокодирования
+            setTimeout(async () => {
+                if (ymaps) {
+                    await testGeocoding();
+                }
+            }, 2000);
+        }
+
+        // Автоматически показываем лог
+        window.onload = () => {
+            log('Тестер Yandex API запущен', 'success');
+            log('Выберите тест для выполнения', 'info');
+        };
+    </script>
+</body>
+</html>
